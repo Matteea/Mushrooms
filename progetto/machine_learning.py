@@ -1,5 +1,5 @@
 import joblib
-import numpy as np
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.pipeline import Pipeline
@@ -7,7 +7,7 @@ from xgboost import XGBClassifier
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn import metrics
+
 
 
 class MachineLearningModels:
@@ -82,7 +82,7 @@ class MachineLearningModels:
         self.plot_confusion_matrix(cm, "Logistic Regressor")
 
         self.evaluate_model("Logistic Regression", y_pred)
-        self.xgb_model = model
+        self.logistic_regression_model = model
 
     def plot_confusion_matrix(self, cm, nome):
         f, ax = plt.subplots(figsize=(5, 5))

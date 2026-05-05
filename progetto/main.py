@@ -14,6 +14,8 @@ def main():
     #inizializzazione della classe per la gestione dei dati
     data_manager = DataManager()
     data_manager.prepare_data()
+    print(data_manager.df.info())
+
 
     #inizializzazione della classe dei modelli di machine learning
     ml_models = MachineLearningModels(
