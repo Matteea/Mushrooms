@@ -40,5 +40,9 @@ def main():
     #allenamento e risultati del modello di deep learning
     dl_model.run()
 
+    data_manager.save_preprocessor()
+    ml_models.save_models()
+    dl_model.save_models()
+
 if __name__ == "__main__":
     main()

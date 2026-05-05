@@ -1,4 +1,4 @@
-
+import joblib
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
@@ -18,6 +18,9 @@ class MachineLearningModels:
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
+
+        self.xgb_model = None
+        self.logistic_regression_model = None
 
     #valutazione delle metriche del modello
     def evaluate_model(self, model_name, y_pred):
@@ -59,6 +62,7 @@ class MachineLearningModels:
 
 
         self.evaluate_model("XGBoost Classifier", y_pred)
+        self.xgb_model = model
         #self.print_feature_names(model)
 
     def train_logistic_regression(self):
@@ -78,6 +82,7 @@ class MachineLearningModels:
         self.plot_confusion_matrix(cm, "Logistic Regressor")
 
         self.evaluate_model("Logistic Regression", y_pred)
+        self.xgb_model = model
 
     def plot_confusion_matrix(self, cm, nome):
         f, ax = plt.subplots(figsize=(5, 5))
@@ -86,6 +91,11 @@ class MachineLearningModels:
         plt.xlabel("y_pred")
         plt.ylabel("y_true")
         plt.show()
+        f.savefig(f"risultati/{nome}_confusion_matrix.png")
+
+    def save_models(self):
+        joblib.dump(self.xgb_model, "modelli/xgb_model.pkl")
+        joblib.dump(self.logistic_regression_model, "modelli/logistic_regression.pkl")
 
 
 

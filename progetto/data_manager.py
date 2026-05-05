@@ -1,4 +1,4 @@
-
+import joblib
 from ucimlrepo import fetch_ucirepo
 import pandas as pd
 
@@ -79,3 +79,6 @@ class DataManager:
         self.feature_engineering()
         self.build_preprocessor()
         self.split_data()
+
+    def save_preprocessor(self):
+        joblib.dump(self.preprocessor, "modelli/preprocessor.pkl")

@@ -1,4 +1,4 @@
-
+import joblib
 import numpy as np
 from sklearn import metrics
 from tensorflow.keras.models import Sequential
@@ -98,3 +98,7 @@ class DeepLearningModel:
         plt.xlabel("y_pred")
         plt.ylabel("y_true")
         plt.show()
+        f.savefig(f"risultati/{nome}_confusion_matrix.png")
+
+    def save_models(self):
+        joblib.dump(self.model, "modelli/deep_learning_model.pkl")
