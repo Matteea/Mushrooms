@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mushroom Classifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0d110e;
+      --surface:   #131a14;
+      --card:      #192019;
+      --border:    #2a3a2b;
+      --accent:    #7ec97e;
+      --accent2:   #c9e87e;
+      --danger:    #e87e7e;
+      --text:      #d4e8d4;
+      --muted:     #6b8a6b;
+      --input-bg:  #111811;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 52px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 32px;
+    }
+
+    .mushroom-icon {
+      font-size: 52px;
+      line-height: 1;
+      filter: drop-shadow(0 0 18px rgba(126,201,126,0.35));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+
+    .header-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .header-text h1 em { font-style: italic; color: var(--accent2); }
+
+    .header-text p {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 480px;
+    }
+
+    .section-label {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 12px;
+    }
+
+    .result-card.edible    { border-color: var(--accent); background: #172317; }
+    .result-card.poisonous { border-color: var(--danger); background: #231717; }
+
+    .result-card .model-name {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .model-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .result-card.edible    .model-dot { background: var(--accent); }
+    .result-card.poisonous .model-dot { background: var(--danger); }
+
+    .result-card .verdict {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .result-card.edible    .verdict { color: var(--accent); }
+    .result-card.poisonous .verdict { color: var(--danger); }
+    .result-card.empty     .verdict { color: var(--border); font-size: 1rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    @media (max-width: 580px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .results-grid  { grid-template-columns: 1fr; }
+      header         { flex-direction: column; }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    label {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    select {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      padding: 9px 12px;
+      width: 100%;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b8a6b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: border-color 0.15s;
+    }
+
+    select:hover { border-color: #3d5a3e; }
+    select:focus { border-color: var(--accent); }
+    select option { background: #192019; color: var(--text); }
+
+    .predict-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #0a140a;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .predict-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.4s ease;
+    }
+
+    .predict-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(126,201,126,0.25); }
+    .predict-btn:hover::after { transform: translateX(100%); }
+    .predict-btn:active { transform: translateY(0); }
+
+    .error-panel {
+      background: #231717;
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: var(--danger);
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+
+    footer {
+      margin-top: 60px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: border-color 0.15s;
+    }
+    .api-badge:hover { border-color: var(--accent); color: var(--accent); }
+    .api-badge .dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="mushroom-icon">🍄</div>
+    <div class="header-text">
+      <h1>Mushroom <em>Classifier</em></h1>
+      <p>Inserisci le caratteristiche morfologiche del fungo per ottenere una predizione di commestibilità tramite modelli ML e Deep Learning.</p>
+    </div>
+  </header>
+
+  <!-- ── Risultati predizione ── -->
+  <div class="section-label">Risultati predizione</div>
+  <div class="results-grid">
+    {% if predictions %}
+      {% set lr_class  = "edible" if predictions.prediction_logistic_regression == "Edibile" else "poisonous" %}
+      {% set xgb_class = "edible" if predictions.prediction_xgb               == "Edibile" else "poisonous" %}
+      {% set dl_class  = "edible" if predictions.prediction_deep_learning      == "Edibile" else "poisonous" %}
+
+      <div class="result-card {{ lr_class }}">
+        <div class="model-name"><span class="model-dot"></span>Logistic Regression</div>
+        <div class="verdict">{{ "✓" if predictions.prediction_logistic_regression == "Edibile" else "✗" }} {{ predictions.prediction_logistic_regression }}</div>
+      </div>
+      <div class="result-card {{ xgb_class }}">
+        <div class="model-name"><span class="model-dot"></span>XGBoost</div>
+        <div class="verdict">{{ "✓" if predictions.prediction_xgb == "Edibile" else "✗" }} {{ predictions.prediction_xgb }}</div>
+      </div>
+      <div class="result-card {{ dl_class }}">
+        <div class="model-name"><span class="model-dot"></span>Deep Learning</div>
+        <div class="verdict">{{ "✓" if predictions.prediction_deep_learning == "Edibile" else "✗" }} {{ predictions.prediction_deep_learning }}</div>
+      </div>
+    {% else %}
+      <div class="result-card empty"><div class="model-name"><span class="model-dot"></span>Logistic Regression</div><div class="verdict">—</div></div>
+      <div class="result-card empty"><div class="model-name"><span class="model-dot"></span>XGBoost</div><div class="verdict">—</div></div>
+      <div class="result-card empty"><div class="model-name"><span class="model-dot"></span>Deep Learning</div><div class="verdict">—</div></div>
+    {% endif %}
+  </div>
+
+  {% if error %}
+  <div class="error-panel">⚠ {{ error }}</div>
+  {% endif %}
+
+  <!-- ── Form ── -->
+  <form method="POST" action="/predict">
+    <div class="section-label">Caratteristiche del fungo</div>
+    <div class="features-grid">
+
+      <!-- 1. cap-shape: bell=b, conical=c, convex=x, flat=f, knobbed=k, sunken=s -->
+      <div class="field">
+        <label for="cap_shape">Cap Shape</label>
+        <select id="cap_shape" name="cap_shape">
+          <option value="b" {% if form and form.cap_shape == "b" %}selected{% endif %}>Bell</option>
+          <option value="c" {% if form and form.cap_shape == "c" %}selected{% endif %}>Conical</option>
+          <option value="x" {% if not form or form.cap_shape == "x" %}selected{% endif %}>Convex</option>
+          <option value="f" {% if form and form.cap_shape == "f" %}selected{% endif %}>Flat</option>
+          <option value="k" {% if form and form.cap_shape == "k" %}selected{% endif %}>Knobbed</option>
+          <option value="s" {% if form and form.cap_shape == "s" %}selected{% endif %}>Sunken</option>
+        </select>
+      </div>
+
+      <!-- 2. cap-surface: fibrous=f, grooves=g, scaly=y, smooth=s -->
+      <div class="field">
+        <label for="cap_surface">Cap Surface</label>
+        <select id="cap_surface" name="cap_surface">
+          <option value="f" {% if form and form.cap_surface == "f" %}selected{% endif %}>Fibrous</option>
+          <option value="g" {% if form and form.cap_surface == "g" %}selected{% endif %}>Grooves</option>
+          <option value="y" {% if form and form.cap_surface == "y" %}selected{% endif %}>Scaly</option>
+          <option value="s" {% if not form or form.cap_surface == "s" %}selected{% endif %}>Smooth</option>
+        </select>
+      </div>
+
+      <!-- 3. cap-color: brown=n, buff=b, cinnamon=c, gray=g, green=r, pink=p, purple=u, red=e, white=w, yellow=y -->
+      <div class="field">
+        <label for="cap_color">Cap Color</label>
+        <select id="cap_color" name="cap_color">
+          <option value="n" {% if not form or form.cap_color == "n" %}selected{% endif %}>Brown</option>
+          <option value="b" {% if form and form.cap_color == "b" %}selected{% endif %}>Buff</option>
+          <option value="c" {% if form and form.cap_color == "c" %}selected{% endif %}>Cinnamon</option>
+          <option value="g" {% if form and form.cap_color == "g" %}selected{% endif %}>Gray</option>
+          <option value="r" {% if form and form.cap_color == "r" %}selected{% endif %}>Green</option>
+          <option value="p" {% if form and form.cap_color == "p" %}selected{% endif %}>Pink</option>
+          <option value="u" {% if form and form.cap_color == "u" %}selected{% endif %}>Purple</option>
+          <option value="e" {% if form and form.cap_color == "e" %}selected{% endif %}>Red</option>
+          <option value="w" {% if form and form.cap_color == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.cap_color == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 4. bruises: bruises=t, no=f -->
+      <div class="field">
+        <label for="bruises">Bruises</label>
+        <select id="bruises" name="bruises">
+          <option value="t" {% if not form or form.bruises == "t" %}selected{% endif %}>Yes</option>
+          <option value="f" {% if form and form.bruises == "f" %}selected{% endif %}>No</option>
+        </select>
+      </div>
+
+      <!-- 5. odor: almond=a, anise=l, creosote=c, fishy=y, foul=f, musty=m, none=n, pungent=p, spicy=s -->
+      <div class="field">
+        <label for="odor">Odor</label>
+        <select id="odor" name="odor">
+          <option value="a" {% if not form or form.odor == "a" %}selected{% endif %}>Almond</option>
+          <option value="l" {% if form and form.odor == "l" %}selected{% endif %}>Anise</option>
+          <option value="c" {% if form and form.odor == "c" %}selected{% endif %}>Creosote</option>
+          <option value="y" {% if form and form.odor == "y" %}selected{% endif %}>Fishy</option>
+          <option value="f" {% if form and form.odor == "f" %}selected{% endif %}>Foul</option>
+          <option value="m" {% if form and form.odor == "m" %}selected{% endif %}>Musty</option>
+          <option value="n" {% if form and form.odor == "n" %}selected{% endif %}>None</option>
+          <option value="p" {% if form and form.odor == "p" %}selected{% endif %}>Pungent</option>
+          <option value="s" {% if form and form.odor == "s" %}selected{% endif %}>Spicy</option>
+        </select>
+      </div>
+
+      <!-- 6. gill-attachment: attached=a, descending=d, free=f, notched=n -->
+      <div class="field">
+        <label for="gill_attachment">Gill Attachment</label>
+        <select id="gill_attachment" name="gill_attachment">
+          <option value="a" {% if form and form.gill_attachment == "a" %}selected{% endif %}>Attached</option>
+          <option value="d" {% if form and form.gill_attachment == "d" %}selected{% endif %}>Descending</option>
+          <option value="f" {% if not form or form.gill_attachment == "f" %}selected{% endif %}>Free</option>
+          <option value="n" {% if form and form.gill_attachment == "n" %}selected{% endif %}>Notched</option>
+        </select>
+      </div>
+
+      <!-- 7. gill-spacing: close=c, crowded=w, distant=d -->
+      <div class="field">
+        <label for="gill_spacing">Gill Spacing</label>
+        <select id="gill_spacing" name="gill_spacing">
+          <option value="c" {% if not form or form.gill_spacing == "c" %}selected{% endif %}>Close</option>
+          <option value="w" {% if form and form.gill_spacing == "w" %}selected{% endif %}>Crowded</option>
+          <option value="d" {% if form and form.gill_spacing == "d" %}selected{% endif %}>Distant</option>
+        </select>
+      </div>
+
+      <!-- 8. gill-size: broad=b, narrow=n -->
+      <div class="field">
+        <label for="gill_size">Gill Size</label>
+        <select id="gill_size" name="gill_size">
+          <option value="b" {% if not form or form.gill_size == "b" %}selected{% endif %}>Broad</option>
+          <option value="n" {% if form and form.gill_size == "n" %}selected{% endif %}>Narrow</option>
+        </select>
+      </div>
+
+      <!-- 9. gill-color: black=k, brown=n, buff=b, chocolate=h, gray=g, green=r, orange=o, pink=p, purple=u, red=e, white=w, yellow=y -->
+      <div class="field">
+        <label for="gill_color">Gill Color</label>
+        <select id="gill_color" name="gill_color">
+          <option value="k" {% if not form or form.gill_color == "k" %}selected{% endif %}>Black</option>
+          <option value="n" {% if form and form.gill_color == "n" %}selected{% endif %}>Brown</option>
+          <option value="b" {% if form and form.gill_color == "b" %}selected{% endif %}>Buff</option>
+          <option value="h" {% if form and form.gill_color == "h" %}selected{% endif %}>Chocolate</option>
+          <option value="g" {% if form and form.gill_color == "g" %}selected{% endif %}>Gray</option>
+          <option value="r" {% if form and form.gill_color == "r" %}selected{% endif %}>Green</option>
+          <option value="o" {% if form and form.gill_color == "o" %}selected{% endif %}>Orange</option>
+          <option value="p" {% if form and form.gill_color == "p" %}selected{% endif %}>Pink</option>
+          <option value="u" {% if form and form.gill_color == "u" %}selected{% endif %}>Purple</option>
+          <option value="e" {% if form and form.gill_color == "e" %}selected{% endif %}>Red</option>
+          <option value="w" {% if form and form.gill_color == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.gill_color == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 10. stalk-shape: enlarging=e, tapering=t -->
+      <div class="field">
+        <label for="stalk_shape">Stalk Shape</label>
+        <select id="stalk_shape" name="stalk_shape">
+          <option value="e" {% if not form or form.stalk_shape == "e" %}selected{% endif %}>Enlarging</option>
+          <option value="t" {% if form and form.stalk_shape == "t" %}selected{% endif %}>Tapering</option>
+        </select>
+      </div>
+
+      <!-- 11. stalk-root: bulbous=b, club=c, cup=u, equal=e, rhizomorphs=z, rooted=r, missing=? -->
+      <div class="field">
+        <label for="stalk_root">Stalk Root</label>
+        <select id="stalk_root" name="stalk_root">
+          <option value="b" {% if form and form.stalk_root == "b" %}selected{% endif %}>Bulbous</option>
+          <option value="c" {% if form and form.stalk_root == "c" %}selected{% endif %}>Club</option>
+          <option value="u" {% if form and form.stalk_root == "u" %}selected{% endif %}>Cup</option>
+          <option value="e" {% if not form or form.stalk_root == "e" %}selected{% endif %}>Equal</option>
+          <option value="z" {% if form and form.stalk_root == "z" %}selected{% endif %}>Rhizomorphs</option>
+          <option value="r" {% if form and form.stalk_root == "r" %}selected{% endif %}>Rooted</option>
+          <option value="?" {% if form and form.stalk_root == "?" %}selected{% endif %}>Missing</option>
+        </select>
+      </div>
+
+      <!-- 12. stalk-surface-above-ring: fibrous=f, scaly=y, silky=k, smooth=s -->
+      <div class="field">
+        <label for="stalk_surface_above_ring">Stalk Surface Above Ring</label>
+        <select id="stalk_surface_above_ring" name="stalk_surface_above_ring">
+          <option value="f" {% if form and form.stalk_surface_above_ring == "f" %}selected{% endif %}>Fibrous</option>
+          <option value="y" {% if form and form.stalk_surface_above_ring == "y" %}selected{% endif %}>Scaly</option>
+          <option value="k" {% if form and form.stalk_surface_above_ring == "k" %}selected{% endif %}>Silky</option>
+          <option value="s" {% if not form or form.stalk_surface_above_ring == "s" %}selected{% endif %}>Smooth</option>
+        </select>
+      </div>
+
+      <!-- 13. stalk-surface-below-ring: fibrous=f, scaly=y, silky=k, smooth=s -->
+      <div class="field">
+        <label for="stalk_surface_below_ring">Stalk Surface Below Ring</label>
+        <select id="stalk_surface_below_ring" name="stalk_surface_below_ring">
+          <option value="f" {% if form and form.stalk_surface_below_ring == "f" %}selected{% endif %}>Fibrous</option>
+          <option value="y" {% if form and form.stalk_surface_below_ring == "y" %}selected{% endif %}>Scaly</option>
+          <option value="k" {% if form and form.stalk_surface_below_ring == "k" %}selected{% endif %}>Silky</option>
+          <option value="s" {% if not form or form.stalk_surface_below_ring == "s" %}selected{% endif %}>Smooth</option>
+        </select>
+      </div>
+
+      <!-- 14. stalk-color-above-ring: brown=n, buff=b, cinnamon=c, gray=g, orange=o, pink=p, red=e, white=w, yellow=y -->
+      <div class="field">
+        <label for="stalk_color_above_ring">Stalk Color Above Ring</label>
+        <select id="stalk_color_above_ring" name="stalk_color_above_ring">
+          <option value="n" {% if form and form.stalk_color_above_ring == "n" %}selected{% endif %}>Brown</option>
+          <option value="b" {% if form and form.stalk_color_above_ring == "b" %}selected{% endif %}>Buff</option>
+          <option value="c" {% if form and form.stalk_color_above_ring == "c" %}selected{% endif %}>Cinnamon</option>
+          <option value="g" {% if form and form.stalk_color_above_ring == "g" %}selected{% endif %}>Gray</option>
+          <option value="o" {% if form and form.stalk_color_above_ring == "o" %}selected{% endif %}>Orange</option>
+          <option value="p" {% if form and form.stalk_color_above_ring == "p" %}selected{% endif %}>Pink</option>
+          <option value="e" {% if form and form.stalk_color_above_ring == "e" %}selected{% endif %}>Red</option>
+          <option value="w" {% if not form or form.stalk_color_above_ring == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.stalk_color_above_ring == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 15. stalk-color-below-ring: brown=n, buff=b, cinnamon=c, gray=g, orange=o, pink=p, red=e, white=w, yellow=y -->
+      <div class="field">
+        <label for="stalk_color_below_ring">Stalk Color Below Ring</label>
+        <select id="stalk_color_below_ring" name="stalk_color_below_ring">
+          <option value="n" {% if form and form.stalk_color_below_ring == "n" %}selected{% endif %}>Brown</option>
+          <option value="b" {% if form and form.stalk_color_below_ring == "b" %}selected{% endif %}>Buff</option>
+          <option value="c" {% if form and form.stalk_color_below_ring == "c" %}selected{% endif %}>Cinnamon</option>
+          <option value="g" {% if form and form.stalk_color_below_ring == "g" %}selected{% endif %}>Gray</option>
+          <option value="o" {% if form and form.stalk_color_below_ring == "o" %}selected{% endif %}>Orange</option>
+          <option value="p" {% if form and form.stalk_color_below_ring == "p" %}selected{% endif %}>Pink</option>
+          <option value="e" {% if form and form.stalk_color_below_ring == "e" %}selected{% endif %}>Red</option>
+          <option value="w" {% if not form or form.stalk_color_below_ring == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.stalk_color_below_ring == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 16. veil-type: partial=p, universal=u -->
+      <div class="field">
+        <label for="veil_type">Veil Type</label>
+        <select id="veil_type" name="veil_type">
+          <option value="p" {% if not form or form.veil_type == "p" %}selected{% endif %}>Partial</option>
+          <option value="u" {% if form and form.veil_type == "u" %}selected{% endif %}>Universal</option>
+        </select>
+      </div>
+
+      <!-- 17. veil-color: brown=n, orange=o, white=w, yellow=y -->
+      <div class="field">
+        <label for="veil_color">Veil Color</label>
+        <select id="veil_color" name="veil_color">
+          <option value="n" {% if form and form.veil_color == "n" %}selected{% endif %}>Brown</option>
+          <option value="o" {% if form and form.veil_color == "o" %}selected{% endif %}>Orange</option>
+          <option value="w" {% if not form or form.veil_color == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.veil_color == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 18. ring-number: none=n, one=o, two=t -->
+      <div class="field">
+        <label for="ring_number">Ring Number</label>
+        <select id="ring_number" name="ring_number">
+          <option value="n" {% if form and form.ring_number == "n" %}selected{% endif %}>None</option>
+          <option value="o" {% if not form or form.ring_number == "o" %}selected{% endif %}>One</option>
+          <option value="t" {% if form and form.ring_number == "t" %}selected{% endif %}>Two</option>
+        </select>
+      </div>
+
+      <!-- 19. ring-type: cobwebby=c, evanescent=e, flaring=f, large=l, none=n, pendant=p, sheathing=s, zone=z -->
+      <div class="field">
+        <label for="ring_type">Ring Type</label>
+        <select id="ring_type" name="ring_type">
+          <option value="c" {% if form and form.ring_type == "c" %}selected{% endif %}>Cobwebby</option>
+          <option value="e" {% if form and form.ring_type == "e" %}selected{% endif %}>Evanescent</option>
+          <option value="f" {% if form and form.ring_type == "f" %}selected{% endif %}>Flaring</option>
+          <option value="l" {% if form and form.ring_type == "l" %}selected{% endif %}>Large</option>
+          <option value="n" {% if form and form.ring_type == "n" %}selected{% endif %}>None</option>
+          <option value="p" {% if not form or form.ring_type == "p" %}selected{% endif %}>Pendant</option>
+          <option value="s" {% if form and form.ring_type == "s" %}selected{% endif %}>Sheathing</option>
+          <option value="z" {% if form and form.ring_type == "z" %}selected{% endif %}>Zone</option>
+        </select>
+      </div>
+
+      <!-- 20. spore-print-color: black=k, brown=n, buff=b, chocolate=h, green=r, orange=o, purple=u, white=w, yellow=y -->
+      <div class="field">
+        <label for="spore_print_color">Spore Print Color</label>
+        <select id="spore_print_color" name="spore_print_color">
+          <option value="k" {% if not form or form.spore_print_color == "k" %}selected{% endif %}>Black</option>
+          <option value="n" {% if form and form.spore_print_color == "n" %}selected{% endif %}>Brown</option>
+          <option value="b" {% if form and form.spore_print_color == "b" %}selected{% endif %}>Buff</option>
+          <option value="h" {% if form and form.spore_print_color == "h" %}selected{% endif %}>Chocolate</option>
+          <option value="r" {% if form and form.spore_print_color == "r" %}selected{% endif %}>Green</option>
+          <option value="o" {% if form and form.spore_print_color == "o" %}selected{% endif %}>Orange</option>
+          <option value="u" {% if form and form.spore_print_color == "u" %}selected{% endif %}>Purple</option>
+          <option value="w" {% if form and form.spore_print_color == "w" %}selected{% endif %}>White</option>
+          <option value="y" {% if form and form.spore_print_color == "y" %}selected{% endif %}>Yellow</option>
+        </select>
+      </div>
+
+      <!-- 21. population: abundant=a, clustered=c, numerous=n, scattered=s, several=v, solitary=y -->
+      <div class="field">
+        <label for="population">Population</label>
+        <select id="population" name="population">
+          <option value="a" {% if form and form.population == "a" %}selected{% endif %}>Abundant</option>
+          <option value="c" {% if form and form.population == "c" %}selected{% endif %}>Clustered</option>
+          <option value="n" {% if form and form.population == "n" %}selected{% endif %}>Numerous</option>
+          <option value="s" {% if not form or form.population == "s" %}selected{% endif %}>Scattered</option>
+          <option value="v" {% if form and form.population == "v" %}selected{% endif %}>Several</option>
+          <option value="y" {% if form and form.population == "y" %}selected{% endif %}>Solitary</option>
+        </select>
+      </div>
+
+      <!-- 22. habitat: grasses=g, leaves=l, meadows=m, paths=p, urban=u, waste=w, woods=d -->
+      <div class="field">
+        <label for="habitat">Habitat</label>
+        <select id="habitat" name="habitat">
+          <option value="g" {% if form and form.habitat == "g" %}selected{% endif %}>Grasses</option>
+          <option value="l" {% if form and form.habitat == "l" %}selected{% endif %}>Leaves</option>
+          <option value="m" {% if form and form.habitat == "m" %}selected{% endif %}>Meadows</option>
+          <option value="p" {% if form and form.habitat == "p" %}selected{% endif %}>Paths</option>
+          <option value="u" {% if form and form.habitat == "u" %}selected{% endif %}>Urban</option>
+          <option value="w" {% if form and form.habitat == "w" %}selected{% endif %}>Waste</option>
+          <option value="d" {% if not form or form.habitat == "d" %}selected{% endif %}>Woods</option>
+        </select>
+      </div>
+
+    </div><!-- /features-grid -->
+
+    <button class="predict-btn" type="submit">Predict Edibility</button>
+  </form>
+
+  <footer>
+    <span>UCI Mushroom Dataset · 8124 campioni · 22 feature</span>
+    <a class="api-badge" href="/docs" target="_blank">
+      <span class="dot"></span> API Docs
+    </a>
+  </footer>
+
+</div><!-- /page -->
+</body>
+</html>

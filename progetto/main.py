@@ -10,11 +10,12 @@ def main():
     #cambio impostazioni di visualizzazione di pandas
     pd.set_option("display.max_columns", None)
     pd.set_option("display.width", None)
+    pd.set_option('display.max_rows', None)
 
     #inizializzazione della classe per la gestione dei dati
     data_manager = DataManager()
     data_manager.prepare_data()
-    print(data_manager.df.info())
+    print(data_manager.df)
 
 
     #inizializzazione della classe dei modelli di machine learning
