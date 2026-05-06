@@ -14,7 +14,6 @@ Progetto di classificazione binaria per predire la **commestibilità dei funghi*
 - [Risultati](#-risultati)
 - [Salvataggio di Modelli e Risultati](#-salvataggio-di-modelli-e-risultati)
 - [API FastAPI](#-api-fastapi)
-- [Utilizzo](#-utilizzo)
 
 ---
 
