@@ -30,6 +30,7 @@ Il progetto confronta tre approcci distinti:
 | Rete Neurale | Deep Learning | `TensorFlow / Keras` |
 
 A differenza di un'architettura tipica dove si sceglie un solo modello, l'API esegue **tutti e tre i modelli in parallelo** su ogni richiesta e restituisce le tre predizioni in un'unica risposta, permettendo di confrontarle direttamente. I modelli addestrati vengono esposti tramite un'**API REST FastAPI** e consumati da un'**interfaccia web HTML** standalone.
+
 ---
 
 ## 📊 Dataset
