@@ -383,23 +383,17 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
  
 ## ▶️ Utilizzo
  
-### 1. Addestrare i modelli
- 
-```bash
-python -m progetto.main
-```
- 
-### 2. Avviare l'API
+### 1. Avviare l'API
  
 ```bash
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
  
-### 3. Usare l'interfaccia web
+### 2. Usare l'interfaccia web
  
 Aprire il browser su `http://localhost:8000`, compilare le feature del fungo e cliccare **Predict**.
  
-### 4. Chiamata diretta all'API (cURL)
+### 3. Chiamata diretta all'API (cURL)
  
 ```bash
 curl -X POST "http://localhost:8000/predict-json" \
