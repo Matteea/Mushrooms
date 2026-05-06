@@ -435,6 +435,33 @@ Risposta attesa:
 ```
  
 ---
+## Come eseguire il progetto
+
+1. Clonare la repository:
+
+```bash
+git clone <repo-url>
+cd <repo-name>
+```
+
+2. Costruire l'immagine Docker:
+
+```bash
+docker build -t funghi-api .
+```
+
+3. Avviare il container:
+
+```bash
+docker run -p 8077:8000 --name docker-funghi funghi-api:latest
+```
+
+4. Aprire nel browser:
+
+```
+http://localhost:80077/docs
+```
+---
  
 ## 🛠️ Tecnologie Utilizzate
  
