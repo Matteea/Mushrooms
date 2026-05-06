@@ -325,28 +325,28 @@ Il body della richiesta deve essere un oggetto JSON con **tutti e 22 i campi** d
  
 ```json
 {
-  "cap_shape": "convex",
-  "cap_surface": "smooth",
-  "cap_color": "brown",
-  "bruises": "yes",
-  "odor": "almond",
-  "gill_attachment": "free",
-  "gill_spacing": "close",
-  "gill_size": "broad",
-  "gill_color": "black",
-  "stalk_shape": "enlarging",
-  "stalk_root": "equal",
-  "stalk_surface_above_ring": "smooth",
-  "stalk_surface_below_ring": "smooth",
-  "stalk_color_above_ring": "white",
-  "stalk_color_below_ring": "white",
-  "veil_type": "partial",
-  "veil_color": "white",
-  "ring_number": "one",
-  "ring_type": "pendant",
-  "spore_print_color": "black",
-  "population": "scattered",
-  "habitat": "woods"
+  "cap_shape": "x",
+  "cap_surface": "s",
+  "cap_color": "n",
+  "bruises": "t",
+  "odor": "p",
+  "gill_attachment": "f",
+  "gill_spacing": "c",
+  "gill_size": "n",
+  "gill_color": "k",
+  "stalk_shape": "e",
+  "stalk_root": "e",
+  "stalk_surface_above_ring": "s",
+  "stalk_surface_below_ring": "s",
+  "stalk_color_above_ring": "w",
+  "stalk_color_below_ring": "w",
+  "veil_type": "p",
+  "veil_color": "w",
+  "ring_number": "o",
+  "ring_type": "p",
+  "spore_print_color": "k",
+  "population": "s",
+  "habitat": "u"
 }
 ```
  
@@ -396,32 +396,32 @@ Aprire il browser su `http://localhost:8000`, compilare le feature del fungo e c
 ### 3. Chiamata diretta all'API (cURL)
  
 ```bash
-curl -X POST "http://localhost:8000/predict-json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cap_shape": "convex",
-    "cap_surface": "smooth",
-    "cap_color": "brown",
-    "bruises": "yes",
-    "odor": "almond",
-    "gill_attachment": "free",
-    "gill_spacing": "close",
-    "gill_size": "broad",
-    "gill_color": "black",
-    "stalk_shape": "enlarging",
-    "stalk_root": "equal",
-    "stalk_surface_above_ring": "smooth",
-    "stalk_surface_below_ring": "smooth",
-    "stalk_color_above_ring": "white",
-    "stalk_color_below_ring": "white",
-    "veil_type": "partial",
-    "veil_color": "white",
-    "ring_number": "one",
-    "ring_type": "pendant",
-    "spore_print_color": "black",
-    "population": "scattered",
-    "habitat": "woods"
-  }'
+curl -Method POST "http://127.0.0.1:8000/predict-json" `
+-Headers @{"Content-Type"="application/json"} `
+-Body '{
+  "cap_shape": "x",
+  "cap_surface": "s",
+  "cap_color": "n",
+  "bruises": "t",
+  "odor": "p",
+  "gill_attachment": "f",
+  "gill_spacing": "c",
+  "gill_size": "n",
+  "gill_color": "k",
+  "stalk_shape": "e",
+  "stalk_root": "e",
+  "stalk_surface_above_ring": "s",
+  "stalk_surface_below_ring": "s",
+  "stalk_color_above_ring": "w",
+  "stalk_color_below_ring": "w",
+  "veil_type": "p",
+  "veil_color": "w",
+  "ring_number": "o",
+  "ring_type": "p",
+  "spore_print_color": "k",
+  "population": "s",
+  "habitat": "u"
+}'
 ```
  
 Risposta attesa:
