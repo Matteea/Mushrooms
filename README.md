@@ -402,7 +402,7 @@ Aprire il browser su `http://localhost:8000`, compilare le feature del fungo e c
 ### 4. Chiamata diretta all'API (cURL)
  
 ```bash
-curl -X POST "http://localhost:8000/predict" \
+curl -X POST "http://localhost:8000/predict-json" \
   -H "Content-Type: application/json" \
   -d '{
     "cap_shape": "convex",
