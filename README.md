@@ -193,18 +193,26 @@ Le confusion matrix mostrano la distribuzione di:
 - **False Positives (FP):** funghi velenosi classificati come commestibili ⚠️
 - **False Negatives (FN):** funghi commestibili classificati come velenosi
 
+| Confusion Matrix | |
+|---|---|
+| ![XGBoost](risultati/XGBClassifier_confusion_matrix.png) | ![Logistic Regression](risultati/Logistic%20Regressor_confusion_matrix.png) |
+| ![Deep Learning](risultati/Deep%20Learning_confusion_matrix.png) | |
+
+---
+
 Le metriche riportate a console includono per ciascun modello:
 - **Accuracy**
 - **Precision**
 - **Recall**
 - **F1-score**
 - **Classification Report** completo per classe
-
-| Confusion Matrix | |
-|---|---|
-| ![XGBoost](risultati/XGBClassifier_confusion_matrix.png) | ![Logistic Regression](risultati/Logistic%20Regressor_confusion_matrix.png) |
-| ![Deep Learning](risultati/Deep%20Learning_confusion_matrix.png) | |
-
+ 
+| Modello | Accuracy | Precision | Recall | F1-score ⬆️ |
+|---------|--------|--------|---------|-------|
+| Logistic Regression | 1.4641 | 4.0410 | 2.0102 | 0.5772 |
+| XGBoost Classifier | 1.6247 | 4.8185 | 2.1951 | 0.4959 |
+| Deep Learning (NN) | ~1.4212 | ~3.9307 | ~1.9826 | ~0.5888 |
+ 
 ---
 
 ## 💾 Salvataggio di Modelli e Risultati
