@@ -1,6 +1,6 @@
 # 🍄 Mushroom Edibility Classification
 
-Progetto di classificazione binaria per predire la **commestibilità dei funghi** (velenosi vs commestibili) attraverso tecniche di Machine Learning tradizionale e Deep Learning, utilizzando il dataset **UCI Mushroom (ID 73)**.
+Progetto di classificazione binaria per predire la **commestibilità dei funghi** (velenosi vs commestibili) attraverso tecniche di Machine Learning tradizionale e Deep Learning, utilizzando il dataset **UCI Mushroom (ID 73)** e con esposizione via **REST API FastAPI** e interfaccia web.
 
 ---
 
@@ -13,6 +13,8 @@ Progetto di classificazione binaria per predire la **commestibilità dei funghi*
 - [Modelli Implementati](#-modelli-implementati)
 - [Risultati](#-risultati)
 - [Salvataggio di Modelli e Risultati](#-salvataggio-di-modelli-e-risultati)
+- [API FastAPI](#-api-fastapi)
+- [Utilizzo](#-utilizzo)
 
 ---
 
@@ -28,6 +30,7 @@ Il progetto confronta tre approcci distinti:
 | Logistic Regression | Modello Lineare | `scikit-learn` |
 | Rete Neurale | Deep Learning | `TensorFlow / Keras` |
 
+A differenza di un'architettura tipica dove si sceglie un solo modello, l'API esegue **tutti e tre i modelli in parallelo** su ogni richiesta e restituisce le tre predizioni in un'unica risposta, permettendo di confrontarle direttamente. I modelli addestrati vengono esposti tramite un'**API REST FastAPI** e consumati da un'**interfaccia web HTML** standalone.
 ---
 
 ## 📊 Dataset
@@ -64,6 +67,10 @@ progetto/
 ├── data_manager.py          # Caricamento, pulizia, preprocessing e split dei dati
 ├── machine_learning.py      # XGBoost Classifier e Logistic Regression
 ├── deep_learning.py         # Rete neurale con TensorFlow/Keras
+├── app.py                   # API REST con FastAPI
+│
+├── templates/
+│   └── index.html           # Interfaccia web per le predizioni
 │
 ├── modelli/                 # Modelli addestrati serializzati
 │   ├── preprocessor.pkl
