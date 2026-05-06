@@ -195,8 +195,8 @@ Le confusion matrix mostrano la distribuzione di:
 
 | Confusion Matrix | |
 |---|---|
-| ![XGBoost](risultati/XGBClassifier_confusion_matrix.png) | ![Logistic Regression](risultati/Logistic%20Regressor_confusion_matrix.png) |
-| ![Deep Learning](risultati/Deep%20Learning_confusion_matrix.png) | |
+| ![XGBoost](progetto/risultati/XGBClassifier_confusion_matrix.png) | ![Logistic Regression](progetto/risultati/Logistic%20Regressor_confusion_matrix.png) |
+| ![Deep Learning](progetto/risultati/Deep%20Learning_confusion_matrix.png) | |
 
 ---
 
@@ -207,11 +207,11 @@ Le metriche riportate a console includono per ciascun modello:
 - **F1-score**
 - **Classification Report** completo per classe
  
-| Modello | Accuracy | Precision | Recall | F1-score ⬆️ |
+| Modello | Accuracy | Precision | Recall | F1-score |
 |---------|--------|--------|---------|-------|
-| Logistic Regression | 1.4641 | 4.0410 | 2.0102 | 0.5772 |
-| XGBoost Classifier | 1.6247 | 4.8185 | 2.1951 | 0.4959 |
-| Deep Learning (NN) | ~1.4212 | ~3.9307 | ~1.9826 | ~0.5888 |
+| Logistic Regression | 1.0 | 1.0 | 1.0 | 1.0 |
+| XGBoost Classifier | 1.0 | 1.0 | 1.0 | 1.0 |
+| Deep Learning (NN) | 1.0 | 1.0 | 1.0 | 1.0 |
  
 ---
 
@@ -228,28 +228,216 @@ Al termine dell'esecuzione, tutti gli artefatti vengono serializzati nella carte
 
 Le **confusion matrix** (`.png`) vengono salvate automaticamente in `risultati/` durante la fase di valutazione.
 
-### Caricare un modello salvato
-
-```python
-import joblib
-
-# Caricare il preprocessore
-preprocessor = joblib.load("modelli/preprocessor.pkl")
-
-# Caricare e usare XGBoost
-xgb_model = joblib.load("modelli/xgb_model.pkl")
-y_pred = xgb_model.predict(X_new)
-
-# Caricare la rete neurale
-dl_model = joblib.load("modelli/deep_learning_model.pkl")
-y_pred_prob = dl_model.predict(preprocessor.transform(X_new))
-y_pred = (y_pred_prob > 0.5).astype(int)
-```
-
 ---
 
+## 🚀 API FastAPI
+ 
+L'applicazione `app.py` espone i modelli addestrati tramite un'**API REST** costruita con [FastAPI](https://fastapi.tiangolo.com/), un framework Python moderno ad alte prestazioni basato su **ASGI** (Asynchronous Server Gateway Interface).
+ 
+### Concetti chiave di FastAPI
+ 
+**Pydantic e validazione automatica degli input**
+ 
+FastAPI usa i modelli [Pydantic](https://docs.pydantic.dev/) per definire lo schema del corpo della richiesta. I tipi Python vengono usati per validare e serializzare automaticamente i dati in entrata. Il modello `DatiMushrooms` definisce esattamente le 22 feature del dataset come campi obbligatori di tipo `str`:
+ 
+```python
+from pydantic import BaseModel
+ 
+class DatiMushrooms(BaseModel):
+    cap_shape: str
+    cap_surface: str
+    cap_color: str
+    bruises: str
+    odor: str
+    # ... tutte le 22 feature
+    habitat: str
+```
+ 
+Se un campo manca o ha un tipo errato, FastAPI restituisce automaticamente un errore `422 Unprocessable Entity` con dettaglio preciso sul campo problematico.
+ 
+> **Nota sui nomi dei campi:** il dataset UCI usa nomi con trattini (`cap-shape`), mentre Pydantic richiede identificatori Python validi. Il mapping da `cap_shape` → `"cap-shape"` viene gestito esplicitamente dentro l'endpoint, costruendo il DataFrame con le chiavi originali del dataset.
+ 
+**Caricamento dei modelli**
+ 
+I quattro artefatti vengono caricati a **livello di modulo**, cioè una sola volta all'avvio del processo Python, e rimangono in memoria per tutta la durata del server:
+ 
+```python
+import joblib
+ 
+modello_logistic_regression = joblib.load("progetto/modelli/logistic_regression.pkl")
+modello_deep_learning       = joblib.load("progetto/modelli/deep_learning_model.pkl")
+modello_xgb                 = joblib.load("progetto/modelli/xgb_model.pkl")
+preprocessor                = joblib.load("progetto/modelli/preprocessor.pkl")
+```
+ 
+Questo approccio è semplice ed efficace: evita di ricaricare i modelli a ogni richiesta, che sarebbe estremamente costoso.
+ 
+**Mapping delle predizioni**
+ 
+Le classi numeriche vengono tradotte in etichette leggibili tramite un dizionario:
+ 
+```python
+class_names = {
+    0: "Velenoso",
+    1: "Edibile"
+}
+```
+ 
+**Preprocessing differenziato**
+ 
+Un aspetto chiave dell'implementazione è che XGBoost e Logistic Regression sono salvati come **Pipeline scikit-learn** (preprocessore + modello), quindi ricevono direttamente il DataFrame grezzo. La rete neurale invece è salvata come **modello Keras puro**, quindi il preprocessore deve essere applicato manualmente prima della predizione:
+ 
+```python
+# XGBoost e Logistic Regression: il preprocessore è interno alla Pipeline
+preditcion_logistic_regression = modello_logistic_regression.predict(mushrooms)[0]
+preditcion_xgb                 = modello_xgb.predict(mushrooms)[0]
+ 
+# Deep Learning: preprocessing manuale, poi predizione con soglia 0.5
+mushrooms_processed = preprocessor.transform(mushrooms)
+prediction_deep_learning_raw = modello_deep_learning.predict(mushrooms_processed)
+prediction_deep_learning = (
+    (prediction_deep_learning_raw[0][0] > 0.5).astype(int)
+    if prediction_deep_learning_raw.ndim == 2
+    else int(prediction_deep_learning_raw[0] > 0.5)
+)
+```
+ 
+La gestione del `ndim` rende il codice robusto sia nel caso in cui Keras restituisca un array 2D `[[0.97]]` (output shape `(1,1)`) sia 1D `[0.97]` (output shape `(1,)`).
+ 
+### Endpoints disponibili
+ 
+| Metodo | Endpoint | Descrizione |
+|---|---|---|
+| `GET` | `/` | Messaggio di stato — conferma che l'API è attiva |
+| `POST` | `/predict` | Riceve le 22 feature, restituisce le predizioni di tutti e 3 i modelli |
+| `GET` | `/docs` | Documentazione Swagger UI (generata automaticamente da FastAPI) |
+| `GET` | `/redoc` | Documentazione ReDoc alternativa |
+ 
+### Schema della richiesta a `/predict`
+ 
+Il body della richiesta deve essere un oggetto JSON con **tutti e 22 i campi** di `DatiMushrooms`. I valori devono corrispondere a quelli presenti nel dataset UCI (es. `"convex"`, `"smooth"`, `"almond"`):
+ 
+```json
+{
+  "cap_shape": "convex",
+  "cap_surface": "smooth",
+  "cap_color": "brown",
+  "bruises": "yes",
+  "odor": "almond",
+  "gill_attachment": "free",
+  "gill_spacing": "close",
+  "gill_size": "broad",
+  "gill_color": "black",
+  "stalk_shape": "enlarging",
+  "stalk_root": "equal",
+  "stalk_surface_above_ring": "smooth",
+  "stalk_surface_below_ring": "smooth",
+  "stalk_color_above_ring": "white",
+  "stalk_color_below_ring": "white",
+  "veil_type": "partial",
+  "veil_color": "white",
+  "ring_number": "one",
+  "ring_type": "pendant",
+  "spore_print_color": "black",
+  "population": "scattered",
+  "habitat": "woods"
+}
+```
+ 
+### Schema della risposta `/predict`
+ 
+L'API restituisce **simultaneamente le predizioni di tutti e tre i modelli** in un unico oggetto JSON:
+ 
+```json
+{
+  "prediction_logistic_regression": "Edibile",
+  "prediction_xgb": "Edibile",
+  "prediction_deep_learning": "Edibile"
+}
+```
+ 
+| Campo | Tipo | Descrizione |
+|---|---|---|
+| `prediction_logistic_regression` | `str` | Predizione della Logistic Regression |
+| `prediction_xgb` | `str` | Predizione di XGBoost |
+| `prediction_deep_learning` | `str` | Predizione della rete neurale |
+ 
+I valori possibili per ogni campo sono `"Edibile"` oppure `"Velenoso"`.
+ 
+### Avviare il server
+ 
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+ 
+- `--reload` abilita il riavvio automatico a ogni modifica del codice (solo sviluppo)
+- Il server sarà disponibile su `http://localhost:8000`
+- La documentazione interattiva su `http://localhost:8000/docs`
+---
+ 
+## ▶️ Utilizzo
+ 
+### 1. Addestrare i modelli
+ 
+```bash
+python -m progetto.main
+```
+ 
+### 2. Avviare l'API
+ 
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+ 
+### 3. Usare l'interfaccia web
+ 
+Aprire il browser su `http://localhost:8000`, compilare le feature del fungo e cliccare **Predict**.
+ 
+### 4. Chiamata diretta all'API (cURL)
+ 
+```bash
+curl -X POST "http://localhost:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cap_shape": "convex",
+    "cap_surface": "smooth",
+    "cap_color": "brown",
+    "bruises": "yes",
+    "odor": "almond",
+    "gill_attachment": "free",
+    "gill_spacing": "close",
+    "gill_size": "broad",
+    "gill_color": "black",
+    "stalk_shape": "enlarging",
+    "stalk_root": "equal",
+    "stalk_surface_above_ring": "smooth",
+    "stalk_surface_below_ring": "smooth",
+    "stalk_color_above_ring": "white",
+    "stalk_color_below_ring": "white",
+    "veil_type": "partial",
+    "veil_color": "white",
+    "ring_number": "one",
+    "ring_type": "pendant",
+    "spore_print_color": "black",
+    "population": "scattered",
+    "habitat": "woods"
+  }'
+```
+ 
+Risposta attesa:
+ 
+```json
+{
+  "prediction_logistic_regression": "Edibile",
+  "prediction_xgb": "Edibile",
+  "prediction_deep_learning": "Edibile"
+}
+```
+ 
+---
+ 
 ## 🛠️ Tecnologie Utilizzate
-
+ 
 | Libreria | Utilizzo |
 |---|---|
 | `ucimlrepo` | Download automatico del dataset UCI |
@@ -259,3 +447,6 @@ y_pred = (y_pred_prob > 0.5).astype(int)
 | `tensorflow` / `keras` | Rete neurale deep learning |
 | `matplotlib` / `seaborn` | Visualizzazione confusion matrix |
 | `joblib` | Serializzazione dei modelli |
+| `fastapi` | Framework REST API asincrono |
+| `uvicorn` | Server ASGI per FastAPI |
+| `pydantic` | Validazione e serializzazione degli input |
